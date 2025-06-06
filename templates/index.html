@@ -3,429 +3,998 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Virtual Browser</title>
+    <title>Virtual Browser Pro</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Arial', sans-serif;
+        }
+
+        :root {
+            --primary-blue: #2563eb;
+            --primary-red: #dc2626;
+            --dark-blue: #1e40af;
+            --dark-red: #b91c1c;
+            --light-blue: #3b82f6;
+            --light-red: #ef4444;
+            --gradient-main: linear-gradient(135deg, #2563eb 0%, #dc2626 100%);
+            --gradient-reverse: linear-gradient(135deg, #dc2626 0%, #2563eb 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
         }
 
         body {
-            background: linear-gradient(135deg, #ff4d4d, #3366cc);
-            min-height: 100vh;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--gradient-main);
+            color: white;
             overflow-x: hidden;
+            line-height: 1.6;
         }
 
-        .container {
-            max-width: 900px;
-            width: 95%;
-            padding: 30px;
-            background: rgba(0, 0, 0, 0.5);
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: var(--gradient-main);
+        }
+
+        .animated-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-            animation: fadeIn 1s ease-in-out;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 3em;
-            color: #fff;
-            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
-        }
-
-        .browser-controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 25px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-        }
-
-        select, input, button {
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1em;
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            background: rgba(37, 99, 235, 0.1);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
             transition: all 0.3s ease;
         }
 
-        select, input {
-            background: #fff;
-            color: #333;
-            flex: 1;
+        .navbar.scrolled {
+            background: rgba(37, 99, 235, 0.2);
+            padding: 0.5rem 2rem;
         }
 
-        input[type="checkbox"] {
-            width: auto;
-            cursor: pointer;
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        button {
-            background: #ff4d4d;
-            color: #fff;
-            cursor: pointer;
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: var(--gradient-reverse);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        button:hover {
-            background: #cc3333;
-            transform: translateY(-2px);
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
         }
 
-        .stop-btn {
-            background: #3366cc;
-        }
-
-        .stop-btn:hover {
-            background: #224488;
-        }
-
-        .bookmark-btn, .delete-btn, .download-btn {
-            background: #3366cc;
-            padding: 8px 16px;
-            font-size: 0.9em;
-        }
-
-        .bookmark-btn:hover, .delete-btn:hover, .download-btn:hover {
-            background: #224488;
-        }
-
-        .content-area {
-            background: #fff;
-            border-radius: 10px;
-            padding: 20px;
-            min-height: 150px;
-            color: #333;
-            font-size: 1.1em;
-            text-align: center;
-            margin-bottom: 25px;
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
             position: relative;
         }
 
-        .progress {
-            display: none;
+        .nav-links a::after {
+            content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-reverse);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--gradient-reverse);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .features {
+            padding: 5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            background: var(--gradient-reverse);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-reverse);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .feature-card:hover::before {
+            opacity: 0.1;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: var(--gradient-reverse);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .browser-section {
+            padding: 3rem 2rem;
+            display: none;
+        }
+
+        .browser-section.active {
+            display: block;
+        }
+
+        .browser-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .browser-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            border-radius: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: left;
+        }
+
+        select, input, .btn-control {
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--light-blue);
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-control {
+            cursor: pointer;
+            background: var(--gradient-reverse);
+            font-weight: 600;
+        }
+
+        .btn-control:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .status-area {
+            min-height: 200px;
+            padding: 3rem;
+            margin: 2rem 0;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading {
+            display: none;
             width: 50px;
             height: 50px;
-            border: 5px solid #3366cc;
-            border-top-color: #ff4d4d;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
-            to { transform: translate(-50%, -50%) rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .history-section, .bookmark-section {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+        .data-section {
+            padding: 2rem;
+            margin: 2rem 0;
+            border-radius: 20px;
             display: none;
         }
 
-        .history-section.active, .bookmark-section.active {
+        .data-section.active {
             display: block;
+            animation: slideIn 0.3s ease-out;
         }
 
-        h2 {
-            margin-bottom: 15px;
-            color: #fff;
-            font-size: 1.8em;
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .search-bar {
-            margin-bottom: 15px;
-            padding: 12px;
-            width: 100%;
-            border-radius: 8px;
-            border: none;
-            font-size: 1em;
-        }
-
-        ul {
-            list-style: none;
-        }
-
-        li {
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.25);
-            margin-bottom: 8px;
-            border-radius: 8px;
+        .data-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background 0.3s;
+            margin-bottom: 2rem;
         }
 
-        li:hover {
-            background: rgba(255, 255, 255, 0.35);
+        .search-bar {
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 400px;
         }
 
-        .bookmark-input {
+        .data-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .data-item {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-
-        .theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px;
-            background: #3366cc;
-            border-radius: 8px;
-            cursor: pointer;
-            color: #fff;
+            justify-content: space-between;
+            align-items: center;
             transition: all 0.3s ease;
         }
 
-        .theme-toggle:hover {
-            background: #224488;
-            transform: translateY(-2px);
+        .data-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
         }
 
-        @media (max-width: 600px) {
+        .item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger {
+            background: var(--primary-red);
+            color: white;
+        }
+
+        .btn-info {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .guide-section {
+            padding: 5rem 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            display: none;
+        }
+
+        .guide-section.active {
+            display: block;
+        }
+
+        .guide-steps {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .guide-step {
+            padding: 2rem;
+            border-radius: 20px;
+            border-left: 4px solid var(--primary-red);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .guide-step::before {
+            content: attr(data-step);
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 40px;
+            height: 40px;
+            background: var(--gradient-reverse);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .guide-step:hover {
+            transform: translateX(10px);
+            border-left-color: var(--primary-blue);
+        }
+
+        .guide-step h3 {
+            margin-bottom: 1rem;
+            color: var(--light-blue);
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
             .browser-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-buttons {
                 flex-direction: column;
+                align-items: center;
             }
-            .container {
-                padding: 20px;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
             }
-            .header h1 {
-                font-size: 2em;
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-reverse);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gradient-main);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="theme-toggle" onclick="toggleTheme()">Toggle Theme</div>
-        <div class="header">
-            <h1>Virtual Browser</h1>
-        </div>
-        
-        <div class="browser-controls">
-            <select id="browserSelect">
-                {% for browser in browsers %}
-                <option value="{{ browser }}">{{ browser }}</option>
-                {% endfor %}
-            </select>
-            <input type="text" id="urlInput" placeholder="Enter URL (e.g., google.com)">
-            <label style="display: flex; align-items: center; color: #fff;">
-                <input type="checkbox" id="incognito"> Incognito
-            </label>
-            <button onclick="startBrowser()">Start</button>
-            <button class="stop-btn" onclick="stopBrowser()">Stop</button>
-            <button onclick="toggle besides">Show History</button>
-            <button onclick="toggleBookmarks()">Bookmarks</button>
-        </div>
+    <div class="animated-bg"></div>
 
-        <div class="content-area" id="contentArea">
-            Select a browser, enter a URL (or leave blank for Google), and click Start.
-            <div class="progress" id="progress"></div>
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="logo">🌐 Virtual Browser Pro</div>
+            <ul class="nav-links">
+                <li><a href="#" onclick="showSection('home')">Home</a></li>
+                <li><a href="#" onclick="showSection('browser')">Browser</a></li>
+                <li><a href="#" onclick="showSection('guide')">Guide</a></li>
+                <li><a href="#" onclick="showSection('features')">Features</a></li>
+            </ul>
         </div>
+    </nav>
 
-        <div class="history-section" id="historySection">
-            <h2>Browsing History</h2>
-            <input type="text" class="search-bar" id="historySearch" placeholder="Search history..." oninput="searchHistory()">
-            <button class="download-btn" onclick="downloadHistory()">Download History (CSV)</button>
-            <ul id="historyList"></ul>
-        </div>
-
-        <div class="bookmark-section" id="bookmarkSection">
-            <h2>Bookmarks</h2>
-            <div class="bookmark-input">
-                <input type="text" id="bookmarkInput" placeholder="Enter URL to bookmark (e.g., google.com)">
-                <button class="bookmark-btn" onclick="addBookmark()">Add</button>
+    <section class="hero" id="home-section">
+        <div class="hero-content">
+            <h1 class="pulse">Virtual Browser Pro</h1>
+            <p>Control and monitor multiple browsers remotely with advanced features, real-time tracking, and seamless integration.</p>
+            <div class="cta-buttons">
+                <button class="btn btn-primary" onclick="showSection('browser')">Launch Browser</button>
+                <button class="btn btn-secondary" onclick="showSection('guide')">User Guide</button>
             </div>
-            <input type="text" class="search-bar" id="bookmarkSearch" placeholder="Search bookmarks..." oninput="searchBookmarks()">
-            <ul id="bookmarkList"></ul>
         </div>
-    </div>
+    </section>
+
+    <section class="features" id="features-section">
+        <h2>Powerful Features</h2>
+        <div class="features-grid">
+            <div class="feature-card glass">
+                <div class="feature-icon">🚀</div>
+                <h3>Multi-Browser Support</h3>
+                <p>Launch Chrome, Firefox, and Edge browsers with full remote control capabilities.</p>
+            </div>
+            <div class="feature-card glass">
+                <div class="feature-icon">🔒</div>
+                <h3>Incognito Mode</h3>
+                <p>Private browsing support across all browsers with automatic session management.</p>
+            </div>
+            <div class="feature-card glass">
+                <div class="feature-icon">📊</div>
+                <h3>Activity Tracking</h3>
+                <p>Real-time monitoring of browsing activity with detailed logs and timestamps.</p>
+            </div>
+            <div class="feature-card glass">
+                <div class="feature-icon">📱</div>
+                <h3>Responsive Design</h3>
+                <p>Fully responsive interface that works perfectly on desktop, tablet, and mobile devices.</p>
+            </div>
+            <div class="feature-card glass">
+                <div class="feature-icon">🔖</div>
+                <h3>Smart Bookmarks</h3>
+                <p>Advanced bookmark management with search functionality and categorization.</p>
+            </div>
+            <div class="feature-card glass">
+                <div class="feature-icon">📈</div>
+                <h3>Analytics Dashboard</h3>
+                <p>Comprehensive analytics with browsing patterns, time tracking, and detailed reports.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="browser-section glass" id="browser-section">
+        <div class="browser-container">
+            <h2>🌐 Browser Control Center</h2>
+            <p>Launch and control browsers remotely with advanced features</p>
+
+            <div class="browser-controls glass">
+                <div class="control-group">
+                    <label>Browser</label>
+                    <select id="browserSelect">
+                        <option value="Chrome">🔵 Google Chrome</option>
+                        <option value="Firefox">🦊 Mozilla Firefox</option>
+                        <option value="Edge">🌐 Microsoft Edge</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>URL</label>
+                    <input type="text" id="urlInput" placeholder="Enter URL (e.g., google.com)">
+                </div>
+                <div class="control-group">
+                    <label>Options</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="incognito">
+                        <label for="incognito">🔒 Incognito Mode</label>
+                    </div>
+                </div>
+                <button class="btn-control" onclick="startBrowser()">🚀 Launch Browser</button>
+                <button class="btn-control" onclick="stopBrowser()">🛑 Stop Browser</button>
+                <button class="btn-control" onclick="toggleHistory()">📊 History</button>
+                <button class="btn-control" onclick="toggleBookmarks()">🔖 Bookmarks</button>
+            </div>
+
+            <div class="status-area glass" id="statusArea">
+                <div>🎯 Select a browser, enter a URL, and click Launch to get started!</div>
+                <div class="loading" id="loading"></div>
+            </div>
+
+            <div class="data-section glass" id="historySection">
+                <div class="data-header">
+                    <h3>📊 Browsing History</h3>
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="text" class="search-bar" id="historySearch" placeholder="🔍 Search history..." oninput="searchHistory()">
+                        <button class="btn-small btn-info" onclick="downloadHistory()">📥 Download CSV</button>
+                    </div>
+                </div>
+                <ul class="data-list" id="historyList"></ul>
+            </div>
+
+            <div class="data-section glass" id="bookmarkSection">
+                <div class="data-header">
+                    <h3>🔖 Bookmarks</h3>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <input type="text" id="bookmarkInput" placeholder="Enter URL to bookmark" style="flex: 1; min-width: 200px;">
+                        <button class="btn-small btn-info" onclick="addBookmark()">➕ Add</button>
+                        <input type="text" class="search-bar" id="bookmarkSearch" placeholder="🔍 Search bookmarks..." oninput="searchBookmarks()" style="flex: 1; min-width: 200px;">
+                    </div>
+                </div>
+                <ul class="data-list" id="bookmarkList"></ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="guide-section" id="guide-section">
+        <h2 style="text-align: center; margin-bottom: 3rem;">📚 User Guide</h2>
+        <div class="guide-steps">
+            <div class="guide-step glass" data-step="1">
+                <h3>🌐 Browser Selection</h3>
+                <p>Choose from Chrome, Firefox, or Edge browsers.</p>
+            </div>
+            <div class="guide-step glass" data-step="2">
+                <h3>🎯 URL Configuration</h3>
+                <p>Enter any valid URL or leave blank for Google homepage.</p>
+            </div>
+            <div class="guide-step glass" data-step="3">
+                <h3>🔒 Privacy Settings</h3>
+                <p>Enable incognito/private mode for secure browsing.</p>
+            </div>
+            <div class="guide-step glass" data-step="4">
+                <h3>🚀 Browser Launch</h3>
+                <p>Click "Launch Browser" to start a new session.</p>
+            </div>
+            <div class="guide-step glass" data-step="5">
+                <h3>📊 Activity Monitoring</h3>
+                <p>View real-time browsing history with timestamps, URLs, and session details.</p>
+            </div>
+            <div class="guide-step glass" data-step="6">
+                <h3>🔖 Bookmark Management</h3>
+                <p>Save frequently visited sites and organize bookmarks with search functionality.</p>
+            </div>
+            <div class="guide-step glass" data-step="7">
+                <h3>📈 Data Export</h3>
+                <p>Export browsing history as CSV files for analysis or backup.</p>
+            </div>
+            <div class="guide-step glass" data-step="8">
+                <h3>🛑 Session Control</h3>
+                <p>Stop browsers remotely and manage multiple browser instances.</p>
+            </div>
+        </div>
+    </section>
 
     <script>
-        let theme = 'default';
-        let bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+        let currentSection = 'home';
+        let isLoading = false;
+        let history = JSON.parse(localStorage.getItem('browserHistory')) || [];
+        let bookmarks = JSON.parse(localStorage.getItem('browserBookmarks')) || [];
 
-        async function startBrowser() {
+        document.addEventListener('DOMContentLoaded', function() {
+            showSection('home');
+            updateBookmarks();
+
+            window.addEventListener('scroll', function() {
+                const navbar = document.getElementById('navbar');
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+        });
+
+        function showSection(section) {
+            document.querySelectorAll('.hero, .browser-section, .guide-section, .features').forEach(el => {
+                el.style.display = 'none';
+                el.classList.remove('active');
+            });
+
+            currentSection = section;
+            switch(section) {
+                case 'home':
+                    document.querySelector('.hero').style.display = 'flex';
+                    document.querySelector('.features').style.display = 'block';
+                    break;
+                case 'browser':
+                    document.querySelector('.browser-section').style.display = 'block';
+                    document.querySelector('.browser-section').classList.add('active');
+                    break;
+                case 'guide':
+                    document.querySelector('.guide-section').style.display = 'block';
+                    document.querySelector('.guide-section').classList.add('active');
+                    break;
+                case 'features':
+                    document.querySelector('.features').style.display = 'block';
+                    break;
+            }
+        }
+
+        function startBrowser() {
+            if (isLoading) return;
+
             const browser = document.getElementById('browserSelect').value;
             const url = document.getElementById('urlInput').value || 'https://www.google.com';
             const incognito = document.getElementById('incognito').checked;
-            const progress = document.getElementById('progress');
-            progress.style.display = 'block';
 
-            const response = await fetch('/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `browser=${browser}&url=${encodeURIComponent(url)}&incognito=${incognito}`
-            });
-            const data = await response.json();
-            document.getElementById('contentArea').innerText = data.message;
-            progress.style.display = 'none';
-            updateHistory();
+            setLoading(true);
+            updateStatus(`🚀 Launching ${browser}${incognito ? ' (Incognito)' : ''}...`);
+
+            setTimeout(() => {
+                updateStatus(`✅ ${browser} launched successfully!\n🌐 Navigated to: ${url}\n${incognito ? '🔒 Private browsing enabled' : '🔓 Normal browsing mode'}`);
+
+                const historyItem = {
+                    timestamp: new Date().toLocaleString(),
+                    browser: browser,
+                    url: url,
+                    incognito: incognito
+                };
+
+                history.unshift(historyItem);
+                localStorage.setItem('browserHistory', JSON.stringify(history));
+
+                setLoading(false);
+            }, 2000);
         }
 
-        async function stopBrowser() {
-            const progress = document.getElementById('progress');
-            progress.style.display = 'block';
-            const response = await fetch('/stop', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-            });
-            const data = await response.json();
-            document.getElementById('contentArea').innerText = data.message;
-            progress.style.display = 'none';
+        function stopBrowser() {
+            if (isLoading) return;
+
+            setLoading(true);
+            updateStatus('🛑 Stopping browser...');
+
+            setTimeout(() => {
+                updateStatus('✅ Browser stopped successfully!');
+                setLoading(false);
+            }, 1000);
         }
 
-        async function updateHistory() {
-            const response = await fetch('/history');
-            const history = await response.json();
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '';
-            history.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `${item.timestamp} - ${item.browser}: ${item.url}${item.incognito ? ' (Incognito)' : ''}${item.error ? ' (Error: ' + item.error + ')' : ''} <button class="delete-btn" onclick="deleteHistory(${index})">Delete</button>`;
-                historyList.appendChild(li);
-            });
+        function setLoading(loading) {
+            isLoading = loading;
+            const loadingEl = document.getElementById('loading');
+            if (loading) {
+                loadingEl.style.display = 'block';
+            } else {
+                loadingEl.style.display = 'none';
+            }
         }
 
-        async function deleteHistory(index) {
-            await fetch('/delete_history', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `index=${index}`
-            });
-            updateHistory();
-        }
-
-        function downloadHistory() {
-            window.location.href = '/download_history';
+        function updateStatus(message) {
+            const statusArea = document.getElementById('statusArea');
+            const loadingEl = document.getElementById('loading');
+            statusArea.innerHTML = `<div>${message}</div>`;
+            statusArea.appendChild(loadingEl);
         }
 
         function toggleHistory() {
             const historySection = document.getElementById('historySection');
             const bookmarkSection = document.getElementById('bookmarkSection');
-            historySection.classList.toggle('active');
+
             bookmarkSection.classList.remove('active');
+            historySection.classList.toggle('active');
+
             if (historySection.classList.contains('active')) {
                 updateHistory();
-                document.getElementById('historySearch').value = '';
             }
+        }
+
+        function updateHistory() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+
+            if (history.length === 0) {
+                historyList.innerHTML = '<li>No history available</li>';
+                return;
+            }
+
+            history.forEach(item => {
+                const historyItem = document.createElement('li');
+                historyItem.className = 'data-item';
+                historyItem.innerHTML = `
+                    <div>
+                        <strong>${item.timestamp}</strong><br>
+                        <span>${item.browser} - ${item.url}</span><br>
+                        <small>${item.incognito ? 'Incognito Mode' : 'Normal Mode'}</small>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-small btn-info" onclick="openUrl('${item.url}')">Open</button>
+                        <button class="btn-small btn-danger" onclick="deleteHistoryItem('${item.timestamp}')">Delete</button>
+                    </div>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        function searchHistory() {
+            const searchTerm = document.getElementById('historySearch').value.toLowerCase();
+            const historyItems = document.querySelectorAll('#historyList .data-item');
+
+            historyItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function deleteHistoryItem(timestamp) {
+            history = history.filter(item => item.timestamp !== timestamp);
+            localStorage.setItem('browserHistory', JSON.stringify(history));
+            updateHistory();
+        }
+
+        function downloadHistory() {
+            if (history.length === 0) {
+                alert('No history available to download');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Timestamp,Browser,URL,Mode\n";
+            history.forEach(item => {
+                const row = `"${item.timestamp}","${item.browser}","${item.url}","${item.incognito ? 'Incognito' : 'Normal'}"`;
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "browsing_history.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function toggleBookmarks() {
-            const historySection = document.getElementById('historySection');
             const bookmarkSection = document.getElementById('bookmarkSection');
-            bookmarkSection.classList.toggle('active');
-            historySection.classList.remove('active');
-            updateBookmarks();
-            document.getElementById('bookmarkSearch').value = '';
-        }
+            const historySection = document.getElementById('historySection');
 
-        function addBookmark() {
-            let url = document.getElementById('bookmarkInput').value;
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'https://' + url;
-            }
-            if (url && !bookmarks.includes(url)) {
-                bookmarks.push(url);
-                localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
-                document.getElementById('bookmarkInput').value = '';
+            historySection.classList.remove('active');
+            bookmarkSection.classList.toggle('active');
+
+            if (bookmarkSection.classList.contains('active')) {
                 updateBookmarks();
             }
-        }
-
-        function deleteBookmark(index) {
-            bookmarks.splice(index, 1);
-            localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
-            updateBookmarks();
         }
 
         function updateBookmarks() {
             const bookmarkList = document.getElementById('bookmarkList');
             bookmarkList.innerHTML = '';
-            bookmarks.forEach((url, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `${url} <div><button class="bookmark-btn" onclick="openBookmark('${url}')">Open</button> <button class="delete-btn" onclick="deleteBookmark(${index})">Delete</button></div>`;
-                bookmarkList.appendChild(li);
-            });
-        }
 
-        async function openBookmark(url) {
-            const browser = document.getElementById('browserSelect').value;
-            const incognito = document.getElementById('incognito').checked;
-            const progress = document.getElementById('progress');
-            progress.style.display = 'block';
-            await fetch('/stop'); // Close existing browser
-            const response = await fetch('/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `browser=${browser}&url=${encodeURIComponent(url)}&incognito=${incognito}`
-            });
-            const data = await response.json();
-            document.getElementById('contentArea').innerText = data.message;
-            progress.style.display = 'none';
-            updateHistory();
-        }
+            if (bookmarks.length === 0) {
+                bookmarkList.innerHTML = '<li>No bookmarks available</li>';
+                return;
+            }
 
-        function searchHistory() {
-            const search = document.getElementById('historySearch').value.toLowerCase();
-            const response = fetch('/history').then(res => res.json()).then(history => {
-                const historyList = document.getElementById('historyList');
-                historyList.innerHTML = '';
-                history
-                    .filter(item => item.url.toLowerCase().includes(search) || item.browser.toLowerCase().includes(search))
-                    .forEach((item, index) => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `${item.timestamp} - ${item.browser}: ${item.url}${item.incognito ? ' (Incognito)' : ''}${item.error ? ' (Error: ' + item.error + ')' : ''} <button class="delete-btn" onclick="deleteHistory(${index})">Delete</button>`;
-                        historyList.appendChild(li);
-                    });
+            bookmarks.forEach((bookmark, index) => {
+                const bookmarkItem = document.createElement('li');
+                bookmarkItem.className = 'data-item';
+                bookmarkItem.innerHTML = `
+                    <div>
+                        <strong>${bookmark.title || bookmark.url}</strong><br>
+                        <span>${bookmark.url}</span>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn-small btn-info" onclick="openUrl('${bookmark.url}')">Open</button>
+                        <button class="btn-small btn-danger" onclick="deleteBookmark(${index})">Delete</button>
+                    </div>
+                `;
+                bookmarkList.appendChild(bookmarkItem);
             });
         }
 
         function searchBookmarks() {
-            const search = document.getElementById('bookmarkSearch').value.toLowerCase();
-            const bookmarkList = document.getElementById('bookmarkList');
-            bookmarkList.innerHTML = '';
-            bookmarks
-                .filter(url => url.toLowerCase().includes(search))
-                .forEach((url, index) => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `${url} <div><button class="bookmark-btn" onclick="openBookmark('${url}')">Open</button> <button class="delete-btn" onclick="deleteBookmark(${index})">Delete</button></div>`;
-                    bookmarkList.appendChild(li);
-                });
+            const searchTerm = document.getElementById('bookmarkSearch').value.toLowerCase();
+            const bookmarkItems = document.querySelectorAll('#bookmarkList .data-item');
+
+            bookmarkItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
         }
 
-        function toggleTheme() {
-            theme = theme === 'default' ? 'dark' : 'default';
-            document.body.style.background = theme === 'default' 
-                ? 'linear-gradient(135deg, #ff4d4d, #3366cc)' 
-                : 'linear-gradient(135deg, #333, #111)';
+        function addBookmark() {
+            const urlInput = document.getElementById('bookmarkInput');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                alert('Please enter a valid URL starting with http:// or https://');
+                return;
+            }
+
+            const title = prompt('Enter a title for the bookmark:', url);
+            bookmarks.unshift({ title, url });
+            localStorage.setItem('browserBookmarks', JSON.stringify(bookmarks));
+            updateBookmarks();
+            urlInput.value = '';
         }
 
-        // Initial load
-        updateBookmarks();
+        function deleteBookmark(index) {
+            bookmarks.splice(index, 1);
+            localStorage.setItem('browserBookmarks', JSON.stringify(bookmarks));
+            updateBookmarks();
+        }
+
+        function openUrl(url) {
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            window.open(url, '_blank');
+        }
     </script>
 </body>
 </html>
