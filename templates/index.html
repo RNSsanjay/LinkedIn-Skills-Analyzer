@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Browser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #ff4d4d, #3366cc);
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 95%;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            color: #fff;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .browser-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        select, input, button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        select, input {
+            background: #fff;
+            color: #333;
+            flex: 1;
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        button {
+            background: #ff4d4d;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #cc3333;
+            transform: translateY(-2px);
+        }
+
+        .stop-btn {
+            background: #3366cc;
+        }
+
+        .stop-btn:hover {
+            background: #224488;
+        }
+
+        .bookmark-btn, .delete-btn, .download-btn {
+            background: #3366cc;
+            padding: 8px 16px;
+            font-size: 0.9em;
+        }
+
+        .bookmark-btn:hover, .delete-btn:hover, .download-btn:hover {
+            background: #224488;
+        }
+
+        .content-area {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 150px;
+            color: #333;
+            font-size: 1.1em;
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .progress {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 5px solid #3366cc;
+            border-top-color: #ff4d4d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .history-section, .bookmark-section {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .history-section.active, .bookmark-section.active {
+            display: block;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: #fff;
+            font-size: 1.8em;
+        }
+
+        .search-bar {
+            margin-bottom: 15px;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            border: none;
+            font-size: 1em;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        li {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.25);
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s;
+        }
+
+        li:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .bookmark-input {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px;
+            background: #3366cc;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: #224488;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 600px) {
+            .browser-controls {
+                flex-direction: column;
+            }
+            .container {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="theme-toggle" onclick="toggleTheme()">Toggle Theme</div>
+        <div class="header">
+            <h1>Virtual Browser</h1>
+        </div>
+        
+        <div class="browser-controls">
+            <select id="browserSelect">
+                {% for browser in browsers %}
+                <option value="{{ browser }}">{{ browser }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" id="urlInput" placeholder="Enter URL (e.g., google.com)">
+            <label style="display: flex; align-items: center; color: #fff;">
+                <input type="checkbox" id="incognito"> Incognito
+            </label>
+            <button onclick="startBrowser()">Start</button>
+            <button class="stop-btn" onclick="stopBrowser()">Stop</button>
+            <button onclick="toggle besides">Show History</button>
+            <button onclick="toggleBookmarks()">Bookmarks</button>
+        </div>
+
+        <div class="content-area" id="contentArea">
+            Select a browser, enter a URL (or leave blank for Google), and click Start.
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="history-section" id="historySection">
+            <h2>Browsing History</h2>
+            <input type="text" class="search-bar" id="historySearch" placeholder="Search history..." oninput="searchHistory()">
+            <button class="download-btn" onclick="downloadHistory()">Download History (CSV)</button>
+            <ul id="historyList"></ul>
+        </div>
+
+        <div class="bookmark-section" id="bookmarkSection">
+            <h2>Bookmarks</h2>
+            <div class="bookmark-input">
+                <input type="text" id="bookmarkInput" placeholder="Enter URL to bookmark (e.g., google.com)">
+                <button class="bookmark-btn" onclick="addBookmark()">Add</button>
+            </div>
+            <input type="text" class="search-bar" id="bookmarkSearch" placeholder="Search bookmarks..." oninput="searchBookmarks()">
+            <ul id="bookmarkList"></ul>
+        </div>
+    </div>
+
+    <script>
+        let theme = 'default';
+        let bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+
+        async function startBrowser() {
+            const browser = document.getElementById('browserSelect').value;
+            const url = document.getElementById('urlInput').value || 'https://www.google.com';
+            const incognito = document.getElementById('incognito').checked;
+            const progress = document.getElementById('progress');
+            progress.style.display = 'block';
+
+            const response = await fetch('/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `browser=${browser}&url=${encodeURIComponent(url)}&incognito=${incognito}`
+            });
+            const data = await response.json();
+            document.getElementById('contentArea').innerText = data.message;
+            progress.style.display = 'none';
+            updateHistory();
+        }
+
+        async function stopBrowser() {
+            const progress = document.getElementById('progress');
+            progress.style.display = 'block';
+            const response = await fetch('/stop', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+            const data = await response.json();
+            document.getElementById('contentArea').innerText = data.message;
+            progress.style.display = 'none';
+        }
+
+        async function updateHistory() {
+            const response = await fetch('/history');
+            const history = await response.json();
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = '';
+            history.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `${item.timestamp} - ${item.browser}: ${item.url}${item.incognito ? ' (Incognito)' : ''}${item.error ? ' (Error: ' + item.error + ')' : ''} <button class="delete-btn" onclick="deleteHistory(${index})">Delete</button>`;
+                historyList.appendChild(li);
+            });
+        }
+
+        async function deleteHistory(index) {
+            await fetch('/delete_history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `index=${index}`
+            });
+            updateHistory();
+        }
+
+        function downloadHistory() {
+            window.location.href = '/download_history';
+        }
+
+        function toggleHistory() {
+            const historySection = document.getElementById('historySection');
+            const bookmarkSection = document.getElementById('bookmarkSection');
+            historySection.classList.toggle('active');
+            bookmarkSection.classList.remove('active');
+            if (historySection.classList.contains('active')) {
+                updateHistory();
+                document.getElementById('historySearch').value = '';
+            }
+        }
+
+        function toggleBookmarks() {
+            const historySection = document.getElementById('historySection');
+            const bookmarkSection = document.getElementById('bookmarkSection');
+            bookmarkSection.classList.toggle('active');
+            historySection.classList.remove('active');
+            updateBookmarks();
+            document.getElementById('bookmarkSearch').value = '';
+        }
+
+        function addBookmark() {
+            let url = document.getElementById('bookmarkInput').value;
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            if (url && !bookmarks.includes(url)) {
+                bookmarks.push(url);
+                localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+                document.getElementById('bookmarkInput').value = '';
+                updateBookmarks();
+            }
+        }
+
+        function deleteBookmark(index) {
+            bookmarks.splice(index, 1);
+            localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+            updateBookmarks();
+        }
+
+        function updateBookmarks() {
+            const bookmarkList = document.getElementById('bookmarkList');
+            bookmarkList.innerHTML = '';
+            bookmarks.forEach((url, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `${url} <div><button class="bookmark-btn" onclick="openBookmark('${url}')">Open</button> <button class="delete-btn" onclick="deleteBookmark(${index})">Delete</button></div>`;
+                bookmarkList.appendChild(li);
+            });
+        }
+
+        async function openBookmark(url) {
+            const browser = document.getElementById('browserSelect').value;
+            const incognito = document.getElementById('incognito').checked;
+            const progress = document.getElementById('progress');
+            progress.style.display = 'block';
+            await fetch('/stop'); // Close existing browser
+            const response = await fetch('/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `browser=${browser}&url=${encodeURIComponent(url)}&incognito=${incognito}`
+            });
+            const data = await response.json();
+            document.getElementById('contentArea').innerText = data.message;
+            progress.style.display = 'none';
+            updateHistory();
+        }
+
+        function searchHistory() {
+            const search = document.getElementById('historySearch').value.toLowerCase();
+            const response = fetch('/history').then(res => res.json()).then(history => {
+                const historyList = document.getElementById('historyList');
+                historyList.innerHTML = '';
+                history
+                    .filter(item => item.url.toLowerCase().includes(search) || item.browser.toLowerCase().includes(search))
+                    .forEach((item, index) => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `${item.timestamp} - ${item.browser}: ${item.url}${item.incognito ? ' (Incognito)' : ''}${item.error ? ' (Error: ' + item.error + ')' : ''} <button class="delete-btn" onclick="deleteHistory(${index})">Delete</button>`;
+                        historyList.appendChild(li);
+                    });
+            });
+        }
+
+        function searchBookmarks() {
+            const search = document.getElementById('bookmarkSearch').value.toLowerCase();
+            const bookmarkList = document.getElementById('bookmarkList');
+            bookmarkList.innerHTML = '';
+            bookmarks
+                .filter(url => url.toLowerCase().includes(search))
+                .forEach((url, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `${url} <div><button class="bookmark-btn" onclick="openBookmark('${url}')">Open</button> <button class="delete-btn" onclick="deleteBookmark(${index})">Delete</button></div>`;
+                    bookmarkList.appendChild(li);
+                });
+        }
+
+        function toggleTheme() {
+            theme = theme === 'default' ? 'dark' : 'default';
+            document.body.style.background = theme === 'default' 
+                ? 'linear-gradient(135deg, #ff4d4d, #3366cc)' 
+                : 'linear-gradient(135deg, #333, #111)';
+        }
+
+        // Initial load
+        updateBookmarks();
+    </script>
+</body>
+</html>
