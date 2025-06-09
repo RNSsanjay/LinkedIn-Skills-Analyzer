@@ -729,272 +729,271 @@
     </section>
 
     <script>
-        let currentSection = 'home';
-        let isLoading = false;
-        let history = JSON.parse(localStorage.getItem('browserHistory')) || [];
-        let bookmarks = JSON.parse(localStorage.getItem('browserBookmarks')) || [];
+    let currentSection = 'home';
+    let isLoading = false;
+    let history = [];
+    let bookmarks = [];
 
-        document.addEventListener('DOMContentLoaded', function() {
-            showSection('home');
-            updateBookmarks();
+    document.addEventListener('DOMContentLoaded', function() {
+        showSection('home');
+        fetchHistory();
 
-            window.addEventListener('scroll', function() {
-                const navbar = document.getElementById('navbar');
-                if (window.scrollY > 50) {
-                    navbar.classList.add('scrolled');
-                } else {
-                    navbar.classList.remove('scrolled');
-                }
-            });
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    });
+
+    function showSection(section) {
+        document.querySelectorAll('.hero, .browser-section, .guide-section, .features').forEach(el => {
+            el.style.display = 'none';
+            el.classList.remove('active');
         });
 
-        function showSection(section) {
-            document.querySelectorAll('.hero, .browser-section, .guide-section, .features').forEach(el => {
-                el.style.display = 'none';
-                el.classList.remove('active');
-            });
-
-            currentSection = section;
-            switch(section) {
-                case 'home':
-                    document.querySelector('.hero').style.display = 'flex';
-                    document.querySelector('.features').style.display = 'block';
-                    break;
-                case 'browser':
-                    document.querySelector('.browser-section').style.display = 'block';
-                    document.querySelector('.browser-section').classList.add('active');
-                    break;
-                case 'guide':
-                    document.querySelector('.guide-section').style.display = 'block';
-                    document.querySelector('.guide-section').classList.add('active');
-                    break;
-                case 'features':
-                    document.querySelector('.features').style.display = 'block';
-                    break;
-            }
+        currentSection = section;
+        switch(section) {
+            case 'home':
+                document.querySelector('.hero').style.display = 'flex';
+                document.querySelector('.features').style.display = 'block';
+                break;
+            case 'browser':
+                document.querySelector('.browser-section').style.display = 'block';
+                document.querySelector('.browser-section').classList.add('active');
+                break;
+            case 'guide':
+                document.querySelector('.guide-section').style.display = 'block';
+                document.querySelector('.guide-section').classList.add('active');
+                break;
+            case 'features':
+                document.querySelector('.features').style.display = 'block';
+                break;
         }
+    }
 
-        function startBrowser() {
-            if (isLoading) return;
+    function startBrowser() {
+        if (isLoading) return;
 
-            const browser = document.getElementById('browserSelect').value;
-            const url = document.getElementById('urlInput').value || 'https://www.google.com';
-            const incognito = document.getElementById('incognito').checked;
+        const browser = document.getElementById('browserSelect').value;
+        const url = document.getElementById('urlInput').value || 'https://www.google.com';
+        const incognito = document.getElementById('incognito').checked;
 
-            setLoading(true);
-            updateStatus(`🚀 Launching ${browser}${incognito ? ' (Incognito)' : ''}...`);
+        setLoading(true);
+        updateStatus(`🚀 Launching ${browser}${incognito ? ' (Incognito)' : ''}...`);
 
-            setTimeout(() => {
-                updateStatus(`✅ ${browser} launched successfully!\n🌐 Navigated to: ${url}\n${incognito ? '🔒 Private browsing enabled' : '🔓 Normal browsing mode'}`);
+        fetch('/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `browser=${browser}&url=${url}&incognito=${incognito}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateStatus(`✅ ${data.message}`);
+            setLoading(false);
+            fetchHistory();
+        })
+        .catch(error => {
+            updateStatus(`❌ Error: ${error}`);
+            setLoading(false);
+        });
+    }
 
-                const historyItem = {
-                    timestamp: new Date().toLocaleString(),
-                    browser: browser,
-                    url: url,
-                    incognito: incognito
-                };
+    function stopBrowser() {
+        if (isLoading) return;
 
-                history.unshift(historyItem);
-                localStorage.setItem('browserHistory', JSON.stringify(history));
+        setLoading(true);
+        updateStatus('🛑 Stopping browser...');
 
-                setLoading(false);
-            }, 2000);
+        fetch('/stop', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateStatus(`✅ ${data.message}`);
+            setLoading(false);
+        })
+        .catch(error => {
+            updateStatus(`❌ Error: ${error}`);
+            setLoading(false);
+        });
+    }
+
+    function setLoading(loading) {
+        isLoading = loading;
+        const loadingEl = document.getElementById('loading');
+        if (loading) {
+            loadingEl.style.display = 'block';
+        } else {
+            loadingEl.style.display = 'none';
         }
+    }
 
-        function stopBrowser() {
-            if (isLoading) return;
+    function updateStatus(message) {
+        const statusArea = document.getElementById('statusArea');
+        const loadingEl = document.getElementById('loading');
+        statusArea.innerHTML = `<div>${message}</div>`;
+        statusArea.appendChild(loadingEl);
+    }
 
-            setLoading(true);
-            updateStatus('🛑 Stopping browser...');
-
-            setTimeout(() => {
-                updateStatus('✅ Browser stopped successfully!');
-                setLoading(false);
-            }, 1000);
-        }
-
-        function setLoading(loading) {
-            isLoading = loading;
-            const loadingEl = document.getElementById('loading');
-            if (loading) {
-                loadingEl.style.display = 'block';
-            } else {
-                loadingEl.style.display = 'none';
-            }
-        }
-
-        function updateStatus(message) {
-            const statusArea = document.getElementById('statusArea');
-            const loadingEl = document.getElementById('loading');
-            statusArea.innerHTML = `<div>${message}</div>`;
-            statusArea.appendChild(loadingEl);
-        }
-
-        function toggleHistory() {
-            const historySection = document.getElementById('historySection');
-            const bookmarkSection = document.getElementById('bookmarkSection');
-
-            bookmarkSection.classList.remove('active');
-            historySection.classList.toggle('active');
-
-            if (historySection.classList.contains('active')) {
-                updateHistory();
-            }
-        }
-
-        function updateHistory() {
-            const historyList = document.getElementById('historyList');
-            historyList.innerHTML = '';
-
-            if (history.length === 0) {
-                historyList.innerHTML = '<li>No history available</li>';
-                return;
-            }
-
-            history.forEach(item => {
-                const historyItem = document.createElement('li');
-                historyItem.className = 'data-item';
-                historyItem.innerHTML = `
-                    <div>
-                        <strong>${item.timestamp}</strong><br>
-                        <span>${item.browser} - ${item.url}</span><br>
-                        <small>${item.incognito ? 'Incognito Mode' : 'Normal Mode'}</small>
-                    </div>
-                    <div class="item-actions">
-                        <button class="btn-small btn-info" onclick="openUrl('${item.url}')">Open</button>
-                        <button class="btn-small btn-danger" onclick="deleteHistoryItem('${item.timestamp}')">Delete</button>
-                    </div>
-                `;
-                historyList.appendChild(historyItem);
-            });
-        }
-
-        function searchHistory() {
-            const searchTerm = document.getElementById('historySearch').value.toLowerCase();
-            const historyItems = document.querySelectorAll('#historyList .data-item');
-
-            historyItems.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        }
-
-        function deleteHistoryItem(timestamp) {
-            history = history.filter(item => item.timestamp !== timestamp);
-            localStorage.setItem('browserHistory', JSON.stringify(history));
+    function fetchHistory() {
+        fetch('/history')
+        .then(response => response.json())
+        .then(data => {
+            history = data;
             updateHistory();
+        });
+    }
+
+    function updateHistory() {
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '';
+
+        if (history.length === 0) {
+            historyList.innerHTML = '<li>No history available</li>';
+            return;
         }
 
-        function downloadHistory() {
-            if (history.length === 0) {
-                alert('No history available to download');
-                return;
+        history.forEach((item, index) => {
+            const historyItem = document.createElement('li');
+            historyItem.className = 'data-item';
+            historyItem.innerHTML = `
+                <div>
+                    <strong>${item.timestamp}</strong><br>
+                    <span>${item.browser} - ${item.url}</span><br>
+                    <small>${item.incognito ? 'Incognito Mode' : 'Normal Mode'}</small>
+                </div>
+                <div class="item-actions">
+                    <button class="btn-small btn-info" onclick="openUrl('${item.url}')">Open</button>
+                    <button class="btn-small btn-danger" onclick="deleteHistoryItem(${index})">Delete</button>
+                </div>
+            `;
+            historyList.appendChild(historyItem);
+        });
+    }
+
+    function searchHistory() {
+        const searchTerm = document.getElementById('historySearch').value.toLowerCase();
+        const historyItems = document.querySelectorAll('#historyList .data-item');
+
+        historyItems.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
             }
+        });
+    }
 
-            let csvContent = "data:text/csv;charset=utf-8,Timestamp,Browser,URL,Mode\n";
-            history.forEach(item => {
-                const row = `"${item.timestamp}","${item.browser}","${item.url}","${item.incognito ? 'Incognito' : 'Normal'}"`;
-                csvContent += row + "\n";
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "browsing_history.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function toggleBookmarks() {
-            const bookmarkSection = document.getElementById('bookmarkSection');
-            const historySection = document.getElementById('historySection');
-
-            historySection.classList.remove('active');
-            bookmarkSection.classList.toggle('active');
-
-            if (bookmarkSection.classList.contains('active')) {
-                updateBookmarks();
+    function deleteHistoryItem(index) {
+        fetch('/delete_history', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `index=${index}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                fetchHistory();
             }
-        }
+        });
+    }
 
-        function updateBookmarks() {
-            const bookmarkList = document.getElementById('bookmarkList');
-            bookmarkList.innerHTML = '';
+    function downloadHistory() {
+        window.location.href = '/download_history';
+    }
 
-            if (bookmarks.length === 0) {
-                bookmarkList.innerHTML = '<li>No bookmarks available</li>';
-                return;
-            }
+    function toggleBookmarks() {
+        const bookmarkSection = document.getElementById('bookmarkSection');
+        const historySection = document.getElementById('historySection');
 
-            bookmarks.forEach((bookmark, index) => {
-                const bookmarkItem = document.createElement('li');
-                bookmarkItem.className = 'data-item';
-                bookmarkItem.innerHTML = `
-                    <div>
-                        <strong>${bookmark.title || bookmark.url}</strong><br>
-                        <span>${bookmark.url}</span>
-                    </div>
-                    <div class="item-actions">
-                        <button class="btn-small btn-info" onclick="openUrl('${bookmark.url}')">Open</button>
-                        <button class="btn-small btn-danger" onclick="deleteBookmark(${index})">Delete</button>
-                    </div>
-                `;
-                bookmarkList.appendChild(bookmarkItem);
-            });
-        }
+        historySection.classList.remove('active');
+        bookmarkSection.classList.toggle('active');
 
-        function searchBookmarks() {
-            const searchTerm = document.getElementById('bookmarkSearch').value.toLowerCase();
-            const bookmarkItems = document.querySelectorAll('#bookmarkList .data-item');
-
-            bookmarkItems.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        }
-
-        function addBookmark() {
-            const urlInput = document.getElementById('bookmarkInput');
-            const url = urlInput.value.trim();
-
-            if (!url) {
-                alert('Please enter a URL');
-                return;
-            }
-
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                alert('Please enter a valid URL starting with http:// or https://');
-                return;
-            }
-
-            const title = prompt('Enter a title for the bookmark:', url);
-            bookmarks.unshift({ title, url });
-            localStorage.setItem('browserBookmarks', JSON.stringify(bookmarks));
-            updateBookmarks();
-            urlInput.value = '';
-        }
-
-        function deleteBookmark(index) {
-            bookmarks.splice(index, 1);
-            localStorage.setItem('browserBookmarks', JSON.stringify(bookmarks));
+        if (bookmarkSection.classList.contains('active')) {
             updateBookmarks();
         }
+    }
 
-        function openUrl(url) {
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'https://' + url;
-            }
-            window.open(url, '_blank');
+    function updateBookmarks() {
+        const bookmarkList = document.getElementById('bookmarkList');
+        bookmarkList.innerHTML = '';
+
+        if (bookmarks.length === 0) {
+            bookmarkList.innerHTML = '<li>No bookmarks available</li>';
+            return;
         }
-    </script>
+
+        bookmarks.forEach((bookmark, index) => {
+            const bookmarkItem = document.createElement('li');
+            bookmarkItem.className = 'data-item';
+            bookmarkItem.innerHTML = `
+                <div>
+                    <strong>${bookmark.title || bookmark.url}</strong><br>
+                    <span>${bookmark.url}</span>
+                </div>
+                <div class="item-actions">
+                    <button class="btn-small btn-info" onclick="openUrl('${bookmark.url}')">Open</button>
+                    <button class="btn-small btn-danger" onclick="deleteBookmark(${index})">Delete</button>
+                </div>
+            `;
+            bookmarkList.appendChild(bookmarkItem);
+        });
+    }
+
+    function searchBookmarks() {
+        const searchTerm = document.getElementById('bookmarkSearch').value.toLowerCase();
+        const bookmarkItems = document.querySelectorAll('#bookmarkList .data-item');
+
+        bookmarkItems.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    function addBookmark() {
+        const urlInput = document.getElementById('bookmarkInput');
+        const url = urlInput.value.trim();
+
+        if (!url) {
+            alert('Please enter a URL');
+            return;
+        }
+
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            alert('Please enter a valid URL starting with http:// or https://');
+            return;
+        }
+
+        const title = prompt('Enter a title for the bookmark:', url);
+        bookmarks.unshift({ title, url });
+        updateBookmarks();
+        urlInput.value = '';
+    }
+
+    function deleteBookmark(index) {
+        bookmarks.splice(index, 1);
+        updateBookmarks();
+    }
+
+    function openUrl(url) {
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+        window.open(url, '_blank');
+    }
+</script>
+
 </body>
 </html>
